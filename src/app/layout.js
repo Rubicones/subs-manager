@@ -1,12 +1,14 @@
+"use client"
 import { Inter } from "next/font/google";
+import { useEffect } from "react";
 import "./globals.sass";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-    title: "Subs",
-    description: "Manage your subscribitions",
-};
+// export const metadata = {
+//     title: "Subs",
+//     description: "Manage your subscribitions",
+// };
 
 export default function RootLayout({ children }) {
     return (

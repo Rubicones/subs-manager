@@ -5,69 +5,108 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPencil, faTrash } from "@fortawesome/free-solid-svg-icons";
 
+function getDaysInCurrentMonth() {
+    const date = new Date();
+
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+const Circle = (props) => {
+    const [strokeOffset, setStrokeOffset] = useState(0);
+    const [strokeDasharray, setStrokeDasharray] = useState(0);
+    const [angle, setAngle] = useState(props.angle);
+    const circle = useRef(0);
+
+    const targetAngle = props.angle;
+    const CIRCUMFERENCE = 2 * Math.PI * 72;
+
+    useEffect(() => {
+        if (targetAngle > 180) circle.current.style.stroke = "green";
+        else if (targetAngle > 90) circle.current.style.stroke = "#f7cf3b";
+        else circle.current.style.stroke = "red";
+        setAngle(props.angle);
+    }, [props]);
+
+    useEffect(() => {
+        setStrokeOffset((1 / 4) * CIRCUMFERENCE);
+        setStrokeDasharray((angle / 360) * CIRCUMFERENCE);
+    }, [angle]);
+
+    useEffect(() => {
+        circle.current.style.strokeDasharray = `${strokeDasharray} ${
+            CIRCUMFERENCE - strokeDasharray
+        }`;
+        circle.current.style.strokeDashoffset = `${strokeOffset}`;
+    }, [strokeDasharray, strokeOffset]);
+
+    return (
+        <svg className={styles["svg-cont"]}>
+            <circle
+                ref={circle}
+                className={styles["inner-circle"]}
+                strokeWidth="8"
+                fill="transparent"
+                r="72"
+                cx="90"
+                cy="90"
+            />
+        </svg>
+    );
+};
+
 function Tile({
-    name,
-    subCost,
-    prevDate,
-    nextDate,
+    title,
+    date,
+    cost,
     link,
     id,
-    openMenu,
-    deleteTile,
+    interval
 }) {
     library.add(faPencil);
-    const circle = useRef(0);
     const daysLeftLabel = useRef(0);
     const tile = useRef(0);
+    const [daysLeft, setDaysLeft] = useState(-2);
+    const [angle, setAngle] = useState(0);
 
-    const [daysLeft, setDaysleft] = useState(20);
-    let radius = null;
-    let circumference = null;
-    let interval = 0;
-    const setProgress = (percent) => {
-        const offset = circumference - (percent / 100) * circumference;
-        circle.current.style.strokeDashoffset = offset;
-    };
+    const ONE_DAY = 24 * 60 * 60 * 1000;
 
     useEffect(() => {
-        console.log(id);
-        radius = circle.current.r.baseVal.value;
-        circumference = radius * 2 * Math.PI;
-        circle.current.style.strokeDasharray = `${circumference} ${circumference}`;
-        circle.current.style.strokeDashoffset = circumference;
-        nextDate = new Date(nextDate);
-        prevDate = new Date(prevDate);
-        interval = nextDate.getTime() - prevDate.getTime();
-        const currentDate = new Date();
-        interval = Math.floor(interval / (1000 * 60 * 60 * 24));
-        setDaysleft(
-            Math.floor(
-                (nextDate.getTime() - currentDate.getTime()) /
-                    (1000 * 60 * 60 * 24)
-            ) + 1
-        );
-    }, []);
-
-    useEffect(() => {
-        setProgress(100 - (daysLeft * 100) / interval + 0.5);
-        if (daysLeft < 5) {
-            circle.current.style.stroke = "#980000";
-            daysLeftLabel.current.style.color = "#980000";
-            tile.current.style.backgroundColor = "#98000015";
-        } else if (daysLeft < 10) {
-            circle.current.style.stroke = "red";
-            daysLeftLabel.current.style.color = "red";
-            tile.current.style.backgroundColor = "#FB000615";
-        } else if (daysLeft < 20) {
-            circle.current.style.stroke = "#ffe606";
-            daysLeftLabel.current.style.color = "#ffe606";
-            tile.current.style.backgroundColor = "#ffe60615";
-        } else if (daysLeft < 32) {
-            circle.current.style.stroke = "green";
-            daysLeftLabel.current.style.color = "green";
-            tile.current.style.backgroundColor = "#10700315";
+        console.log(daysLeft)
+        switch (interval.interval) {
+            case "month":
+                setAngle(
+                    (daysLeft * 360) / (getDaysInCurrentMonth() * interval.n)
+                );
+                break;
+            case "week":
+                setAngle((daysLeft * 360) / (7 * interval.n));
+                break;
+            case "day":
+                setAngle((daysLeft * 360) / interval.n);
+                break;
         }
     }, [daysLeft]);
+
+    useEffect(() => {
+        let today = new Date();
+        let payday = new Date(date);
+        if (daysLeft === -2) {
+            switch (interval.interval) {
+                case "month":
+                    payday.setMonth(payday.getMonth() + interval.n);
+                    setDaysLeft(Math.round((payday - today) / ONE_DAY));
+                    break;
+                case "week":
+                    payday.setTime(payday.getTime() + ONE_DAY * 7 * interval.n);
+                    setDaysLeft(Math.round((payday - today) / ONE_DAY));
+                    break;
+                case "day":
+                    payday.setTime(payday.getTime() + ONE_DAY * interval.n);
+                    setDaysLeft(Math.round((payday - today) / ONE_DAY));
+                    break;
+            }
+        }
+    }, []);
 
     return (
         <>
@@ -75,24 +114,14 @@ function Tile({
                 <div className={styles.tile} data-id={id}>
                     <div className={styles["tile-inner"]} ref={tile}>
                         <div className={styles["tile-front"]}>
-                            <svg className={styles["svg-cont"]}>
-                                <circle
-                                    ref={circle}
-                                    className={styles["inner-circle"]}
-                                    strokeWidth="8"
-                                    fill="transparent"
-                                    r="72"
-                                    cx="90"
-                                    cy="90"
-                                />
-                            </svg>
+                            <Circle angle={angle} />
                             <span
                                 className={styles["days-left"]}
                                 ref={daysLeftLabel}
                             >
                                 {daysLeft}
                             </span>
-                            <span className={styles.name}>{name}</span>
+                            <span className={styles.name}>{title}</span>
                         </div>
                         <div className={styles["tile-back"]}>
                             <div className={styles["trash-btn"]}>
@@ -115,12 +144,12 @@ function Tile({
                                 />
                             </div>
                             <span className={styles["cost-header"]}>Cost</span>
-                            <span className={styles.cost}>{subCost}$</span>
+                            <span className={styles.cost}>{cost}$</span>
                             <span className={styles["date-header"]}>
                                 Next payment
                             </span>
                             <span className={styles.date}>
-                                {new Date(nextDate).toLocaleDateString("ru-RU")}
+                                
                             </span>
                             <span className={styles["date-header"]}>Link</span>
                             <span className={styles.date}>
