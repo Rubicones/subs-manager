@@ -8,7 +8,7 @@ function SideMenu({ createNewTile, hideMenu }) {
     const cost = useRef(null);
     const link = useRef(null);
 
-    const interval = { n: 1, interval: "week" }; // month, week, day
+    const interval = { n: 1, interval: "month" }; // month, week, day
 
     const submitTileAdd = () => {
         createNewTile(

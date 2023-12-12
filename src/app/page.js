@@ -168,9 +168,6 @@ function Home() {
                     <SideMenu
                         createNewTile={createNewTile}
                         hideMenu={() => setIsMenuOpen(false)}
-                        // adderActive={adderActive}
-                        // submitAddTile={submitAddTile}
-                        // toOpenMenu={toOpenMenu}
                     />
                 )}
             </div>
